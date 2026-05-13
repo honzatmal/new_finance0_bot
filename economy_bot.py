@@ -22,7 +22,7 @@ async def get_specific_news(keyword):
     except: return None
     return None
 
-# 2. 경제 지표 일정 수집 함수 (에러 원인 해결)
+# 2. 경제 지표 일정 수집 함수
 async def get_economy_calendar(today_str):
     url = f"https://news.google.com/search?q={today_str}+주요+경제일정+발표&hl=ko&gl=KR&ceid=KR%3Ako"
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -34,7 +34,7 @@ async def get_economy_calendar(today_str):
             news_list = "".join([f"• {a.select_one('a.J77Cte').text}\n" for a in articles])
             return "📅 *[오늘의 주요 경제 일정]*\n" + news_list
     except: pass
-    return "📅 *[오늘의 경제 일정]*\n• [인베스팅 캘린더](https://kr.investing.com/economic-calendar/)에서 상세 일정을 확인하세요.\n"
+    return "📅 *[오늘의 경제 일정]*\n• [인베스팅 캘린더](https://kr.investing.com/economic-calendar/) 확인\n"
 
 # 3. 기업 실적 발표 수집 함수
 async def get_earnings_report():
@@ -56,29 +56,43 @@ async def send_report():
     hour = now_kst.hour
     today_str = now_kst.strftime("%m월 %d일")
 
-    # 시장 지표 수집
-    symbols = {"나스닥": "^IXIC", "S&P500": "^GSPC", "비트코인": "BTC-USD", "원/달러": "USDKRW=X", "국제금": "GC=F"}
+    # 지표 리스트 정의 (요청하신 지표 모두 포함)
+    market_data = {
+        "📊 지수/환율": {
+            "나스닥": "^IXIC", "S&P500": "^GSPC", "원/달러": "USDKRW=X"
+        },
+        "🪙 암호화폐": {
+            "비트코인": "BTC-USD", "이더리움": "ETH-USD"
+        },
+        "🛢️ 에너지/금속": {
+            "WTI유": "CL=F", "국제금": "GC=F", "실버": "SI=F", 
+            "구리": "HG=F", "플래티늄": "PL=F", "팔라듐": "PA=F"
+        }
+    }
     
-    report = f"🔔 *[{hour}시 정각 리포트]*\n"
+    report = f"🔔 *[{hour}시 정각 경제 리포트]*\n"
     report += f"🇰🇷 KST: `{now_kst.strftime('%H:%M')}` | 🇺🇸 NY: `{datetime.now(pytz.timezone('America/New_York')).strftime('%H:%M')}`\n\n"
     
-    report += "📈 *현재 시장 지표*\n"
-    for name, ticker in symbols.items():
-        try:
-            data = yf.Ticker(ticker).history(period="2d")
-            close, prev = data['Close'].iloc[-1], data['Close'].iloc[-2]
-            diff, pct = close - prev, ((close - prev) / prev) * 100
-            mark = "🔸" if diff > 0 else "🔹" if diff < 0 else "▫️"
-            report += f"{name}: `{close:,.2f}` ({mark} {pct:+.2f}%)\n"
-        except: report += f"{name}: 데이터 오류\n"
+    for category, symbols in market_data.items():
+        report += f"*{category}*\n"
+        for name, ticker in symbols.items():
+            try:
+                data = yf.Ticker(ticker).history(period="2d")
+                close, prev = data['Close'].iloc[-1], data['Close'].iloc[-2]
+                pct = ((close - prev) / prev) * 100
+                mark = "🔸" if close > prev else "🔹" if close < prev else "▫️"
+                report += f"{name}: `{close:,.2f}` ({mark} {pct:+.2f}%)\n"
+            except:
+                report += f"{name}: 데이터 오류\n"
+        report += "\n"
 
     # 시간대별 맞춤 정보
     if hour == 8:
-        report += "\n☀️ *[장 시작 전 체크]*\n" + await get_economy_calendar(today_str)
+        report += await get_economy_calendar(today_str) + "\n"
     elif hour == 22:
-        report += "\n🌙 *[미장 개장 준비]*\n" + await get_earnings_report()
+        report += await get_earnings_report() + "\n"
     
-    report += "\n🔗 [인베스팅 경제 캘린더 보기](https://kr.investing.com/economic-calendar/)"
+    report += "🔗 [인베스팅 경제 캘린더 보기](https://kr.investing.com/economic-calendar/)"
 
     # 전송
     token = os.environ.get('TELEGRAM_TOKEN')
