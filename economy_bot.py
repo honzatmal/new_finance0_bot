@@ -36,17 +36,25 @@ async def send_combined_report():
         try:
             data = yf.Ticker(ticker).history(period="2d")
             close_price = data['Close'].iloc[-1]
-            pct_change = ((close_price - data['Close'].iloc[-2]) / data['Close'].iloc[-2]) * 100
+            prev_price = data['Close'].iloc[-2]
             
-            # 🔺 상승 시 기존 빨간색 / 🔻 하락 시 파란색 (요청 반영)
-            if pct_change > 0:
-                mark = "🔺"
-            elif pct_change < 0:
-                mark = "🔻"
+            # 등락 포인트 및 등락율 계산
+            change_point = close_price - prev_price
+            pct_change = (change_point / prev_price) * 100
+            
+            # 🔴 상승 / 🔵 하락 기호 및 텍스트 설정 (요청 반영)
+            if change_point > 0:
+                mark = "🔴"
+                diff_text = f"+{change_point:,.2f}"
+            elif change_point < 0:
+                mark = "🔵"
+                diff_text = f"{change_point:,.2f}" # 마이너스 기호 포함
             else:
                 mark = "⚪"
+                diff_text = "0.00"
                 
-            full_report += f"{name}: {close_price:,.2f} ({mark} {abs(pct_change):.2f}%)\n"
+            # 형식: 나스닥: 16,000.00 (🔴 -20.00, -0.71%)
+            full_report += f"{name}: {close_price:,.2f} ({mark} {diff_text}, {pct_change:+.2f}%)\n"
         except:
             full_report += f"{name}: 시세 정보 실패\n"
 
@@ -70,7 +78,7 @@ async def send_combined_report():
             text=full_report, 
             disable_web_page_preview=True
         )
-        print("🚀 통합 리포트(이모지 수정본) 전송 성공!")
+        print("🚀 포인트/퍼센트 통합 리포트 전송 성공!")
 
 if __name__ == "__main__":
     asyncio.run(send_combined_report())
