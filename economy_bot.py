@@ -4,7 +4,6 @@ import asyncio
 import os
 
 async def send_message():
-    # 지표 설정
     symbols = {
         "나스닥": "^IXIC", "S&P500": "^GSPC", "유로FX": "EURUSD=X",
         "골드": "GC=F", "실버": "SI=F", "WTI유": "CL=F",
@@ -12,7 +11,6 @@ async def send_message():
     }
     
     report = "📊 [오늘의 주요 경제 지표]\n\n"
-    
     for name, ticker in symbols.items():
         try:
             data = yf.Ticker(ticker).history(period="2d")
@@ -23,23 +21,23 @@ async def send_message():
                 pct_change = (change / prev_price) * 100
                 emoji = "🔺" if change > 0 else "🔻"
                 report += f"{name}: {close_price:,.2f} ({emoji}{pct_change:.2f}%)\n"
-        except Exception as e:
-            report += f"{name}: 조회 실패 ({e})\n"
+        except:
+            report += f"{name}: 조회 실패\n"
 
-    # 환경 변수 가져오기
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('CHAT_ID')
 
-    # 들여쓰기 주의: 아래 블록은 모두 같은 레벨이어야 합니다.
     if token and chat_id:
         try:
             bot = telegram.Bot(token=token)
+            # 여기에 결과를 출력하도록 추가했습니다.
             await bot.send_message(chat_id=int(chat_id), text=report)
-            print("✅ 텔레그램 메시지 전송 성공!")
+            print("🚀 [성공] 텔레그램으로 메시지를 보냈습니다!")
         except Exception as e:
-            print(f"❌ 전송 실패 에러 발생: {e}")
+            print(f"❌ [실패] 텔레그램 전송 에러: {e}")
+            print(f"현재 사용중인 챗 ID: {chat_id}")
     else:
-        print("⚠️ 에러: TELEGRAM_TOKEN 또는 CHAT_ID 환경 변수를 찾을 수 없습니다.")
+        print("⚠️ [에러] Secrets 설정(TOKEN 또는 ID)을 확인해주세요.")
 
 if __name__ == "__main__":
     asyncio.run(send_message())
