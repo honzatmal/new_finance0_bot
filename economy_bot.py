@@ -22,7 +22,7 @@ async def get_specific_news(keyword):
     return None
 
 async def send_combined_report():
-    # 1. 지표 설정 (전문 분야 집중)
+    # 1. 지표 설정
     symbols = {
         "나스닥": "^IXIC", "S&P500": "^GSPC", "골드": "GC=F", 
         "실버": "SI=F", "구리": "HG=F", "비트코인": "BTC-USD"
@@ -38,13 +38,13 @@ async def send_combined_report():
             close_price = data['Close'].iloc[-1]
             pct_change = ((close_price - data['Close'].iloc[-2]) / data['Close'].iloc[-2]) * 100
             
-            # 🔴 상승 시 빨간색 △ / 🔵 하락 시 파란색 ▽ (요청 반영)
+            # 🔺 상승 시 기존 빨간색 / 🔻 하락 시 파란색 (요청 반영)
             if pct_change > 0:
-                mark = "🔴 △"
+                mark = "🔺"
             elif pct_change < 0:
-                mark = "🔵 ▽"
+                mark = "🔻"
             else:
-                mark = "⚪ -"
+                mark = "⚪"
                 
             full_report += f"{name}: {close_price:,.2f} ({mark} {abs(pct_change):.2f}%)\n"
         except:
@@ -70,7 +70,7 @@ async def send_combined_report():
             text=full_report, 
             disable_web_page_preview=True
         )
-        print("🚀 통합 리포트(색상 수정본) 전송 성공!")
+        print("🚀 통합 리포트(이모지 수정본) 전송 성공!")
 
 if __name__ == "__main__":
     asyncio.run(send_combined_report())
