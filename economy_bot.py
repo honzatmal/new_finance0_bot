@@ -5,6 +5,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
+import pytz # 시간대 변환을 위해 필요
 
 async def get_specific_news(keyword):
     url = f"https://news.google.com/search?q={keyword}&hl=ko&gl=KR&ceid=KR%3Ako"
@@ -42,11 +43,17 @@ async def send_full_report():
         "원/달러": "USDKRW=X"
     }
     
-    now = datetime.now()
-    time_str = now.strftime("%Y-%m-%d %H:%M")
+    # 시간 설정 (KST 및 뉴욕 시간)
+    tz_kst = pytz.timezone('Asia/Seoul')
+    tz_ny = pytz.timezone('America/New_York')
     
-    # 텔레그램 가독성을 위해 코드 블록(`) 형식을 일부 섞어 텍스트 색상 대비를 줍니다.
-    full_report = f"📊 *[통합 경제 리포트 - {time_str}]*\n\n"
+    now_kst = datetime.now(tz_kst)
+    now_ny = datetime.now(tz_ny)
+    
+    time_kst_str = now_kst.strftime("%Y-%m-%d %H:%M")
+    time_ny_str = now_ny.strftime("%Y-%m-%d %H:%M")
+    
+    full_report = f"📊 *[통합 경제 리포트]*\n\n"
     full_report += "📈 *[실시간 시장 지표]*\n"
     
     for name, ticker in symbols.items():
@@ -58,12 +65,11 @@ async def send_full_report():
             change_point = close_price - prev_price
             pct_change = (change_point / prev_price) * 100
             
-            # 🔴/🔵보다 크기가 작고 세련된 기호로 변경
             if change_point > 0:
-                mark = "🔸" # 상승 (주황/빨강 계열 작은 다이아몬드)
+                mark = "🔸"
                 sign = "+"
             elif change_point < 0:
-                mark = "🔹" # 하락 (파란색 계열 작은 다이아몬드)
+                mark = "🔹"
                 sign = ""
             else:
                 mark = "▫️"
@@ -72,6 +78,12 @@ async def send_full_report():
             full_report += f"{name}: `{close_price:,.2f}` ({mark} {sign}{change_point:,.2f}, {pct_change:+.2f}%)\n"
         except:
             full_report += f"{name}: 업데이트 대기 중\n"
+
+    # --- 요청하신 시간 정보 추가 영역 ---
+    full_report += f"\n🕒 *[시간 정보]*\n"
+    full_report += f"🇰🇷 한국 시간: `{time_kst_str}`\n"
+    full_report += f"🇺🇸 뉴욕 시간: `{time_ny_str}`\n"
+    # ----------------------------------
 
     full_report += "\n" + await get_economy_calendar()
     full_report += "\n📰 *[분야별 전문 뉴스 요약]*\n"
@@ -86,7 +98,6 @@ async def send_full_report():
 
     if token and chat_id:
         bot = telegram.Bot(token=token)
-        # 마크다운 서식을 사용하여 텍스트를 더 깔끔하게 전송
         await bot.send_message(
             chat_id=int(chat_id), 
             text=full_report, 
