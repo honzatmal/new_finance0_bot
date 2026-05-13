@@ -2,25 +2,20 @@ name: Daily Economy Report
 
 on:
   schedule:
-    - cron: '30 21 * * *' # 매일 아침 6:30 (KST)
+    - cron: '30 21 * * *'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4 # 최신 버전으로 업데이트
-
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v5 # 최신 버전으로 업데이트
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
       - name: Install dependencies
-        run: |
-          pip install yfinance python-telegram-bot
-
+        run: pip install yfinance python-telegram-bot
       - name: Run script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
