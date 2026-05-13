@@ -2,29 +2,22 @@ name: Daily Economy Report
 
 on:
   schedule:
-    # UTC 기준 21:30분은 한국 시간(KST)으로 다음날 06:30분입니다.
-    - cron: '30 21 * * *'
-  workflow_dispatch: # 버튼을 눌러 수동 실행 가능
+    - cron: '30 21 * * *' # 한국 시간 오전 6:30
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4 # 최신 버전 사용으로 Node.js 경고 해결
-
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v5 # 최신 버전 사용
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
       - name: Install dependencies
-        run: |
-          pip install yfinance python-telegram-bot
-
+        run: pip install yfinance python-telegram-bot
       - name: Run script
         env:
-          # GitHub Secrets에 저장된 값을 환경 변수로 전달
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python economy_bot.py
