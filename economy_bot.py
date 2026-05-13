@@ -35,5 +35,12 @@ async def send_message():
     else:
         print("에러: Secrets 설정이 누락되었습니다.")
 
-if __name__ == "__main__":
-    asyncio.run(send_message())
+if token and chat_id:
+        try:
+            bot = telegram.Bot(token=token)
+            await bot.send_message(chat_id=int(chat_id), text=report)
+            print("메시지 전송 성공!") # 성공 시 로그에 출력
+        except Exception as e:
+            print(f"텔레그램 전송 중 에러 발생: {e}") # 실패 이유 출력
+    else:
+        print("에러: Secrets 설정이 누락되었습니다.")
