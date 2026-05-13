@@ -1,15 +1,23 @@
-name: Scheduled Economy Report
+name: Hourly Economy Report
 
 on:
   schedule:
-    # 한국 시간 기준 (KST = UTC + 9)
-    - cron: '2 22 * * *'  # KST 07:02 (UTC 22:02 전날)
-    - cron: '58 23 * * *' # KST 08:58 (UTC 23:58 전날) 
-    - cron: '2 01 * * *'  # KST 10:02 (UTC 01:02)
-    - cron: '2 03 * * *'  # KST 12:02 (UTC 03:02)
-    - cron: '2 06 * * *'  # KST 15:02 (UTC 06:02)
-    - cron: '2 09 * * *'  # KST 18:02 (UTC 09:02)
-    - cron: '2 12 * * *'  # KST 21:02 (UTC 12:02)
+    # KST 08:00 ~ 22:00 매 시간 정각 (UTC 23:00 ~ 13:00)
+    - cron: '0 23 * * *' # 08:00
+    - cron: '0 0 * * *'  # 09:00
+    - cron: '0 1 * * *'  # 10:00
+    - cron: '0 2 * * *'  # 11:00
+    - cron: '0 3 * * *'  # 12:00
+    - cron: '0 4 * * *'  # 13:00
+    - cron: '0 5 * * *'  # 14:00
+    - cron: '0 6 * * *'  # 15:00
+    - cron: '0 7 * * *'  # 16:00
+    - cron: '0 8 * * *'  # 17:00
+    - cron: '0 9 * * *'  # 18:00
+    - cron: '0 10 * * *' # 19:00
+    - cron: '0 11 * * *' # 20:00
+    - cron: '0 12 * * *' # 21:00
+    - cron: '0 13 * * *' # 22:00
   workflow_dispatch:
 
 jobs:
