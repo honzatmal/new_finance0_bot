@@ -2,9 +2,14 @@ name: Scheduled Economy Report
 
 on:
   schedule:
-    - cron: '30 21 * * *' # KST 06:30 (지표 일정 중심)
-    - cron: '30 13 * * *' # KST 22:30 (실적 발표 중심)
-  workflow_dispatch:
+    # 한국 시간 기준 (KST = UTC + 9)
+    - cron: '2 22 * * *' # KST 07:02 (UTC 22:02 전날)
+    - cron: '2 01 * * *' # KST 10:02 (UTC 01:02)
+    - cron: '2 03 * * *' # KST 12:02 (UTC 03:02)
+    - cron: '2 06 * * *' # KST 15:02 (UTC 06:02)
+    - cron: '2 09 * * *' # KST 18:02 (UTC 09:02)
+    - cron: '2 12 * * *' # KST 21:02 (UTC 12:02)
+  workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
   build:
