@@ -2,11 +2,10 @@ name: Daily Economy Report
 
 on:
   schedule:
-    # GitHub Actions는 UTC 기준이므로 한국 시간(KST)에서 9시간을 뺍니다.
-    - cron: '30 21 * * *' # KST 06:30
-    - cron: '00 03 * * *' # KST 12:00
-    - cron: '00 07 * * *' # KST 16:00
-    - cron: '00 12 * * *' # KST 21:00
+    - cron: '30 21 * * *' # KST 06:30 (미장 마감/아침 리포트)
+    - cron: '00 03 * * *' # KST 12:00 (오전 장 점검)
+    - cron: '00 07 * * *' # KST 16:00 (국내 마감/유럽 개장)
+    - cron: '00 12 * * *' # KST 21:00 (미장 개장 전 최종 점검)
   workflow_dispatch:
 
 jobs:
@@ -19,7 +18,8 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install dependencies
-        run: pip install yfinance python-telegram-bot beautifulsoup4 requests
+        run: |
+          pip install yfinance python-telegram-bot beautifulsoup4 requests pytz
       - name: Run script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
