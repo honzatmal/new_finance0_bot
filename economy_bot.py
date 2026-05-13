@@ -5,7 +5,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
-import pytz # 시간대 변환을 위해 필요
+import pytz
 
 async def get_specific_news(keyword):
     url = f"https://news.google.com/search?q={keyword}&hl=ko&gl=KR&ceid=KR%3Ako"
@@ -36,14 +36,14 @@ async def get_economy_calendar():
     return "📅 [오늘의 경제 일정] 주요 지표 발표 일정을 확인하세요.\n"
 
 async def send_full_report():
-    # 지표 설정
+    # 1. 지표 설정
     symbols = {
         "나스닥": "^IXIC", "S&P500": "^GSPC", "골드": "GC=F", 
         "실버": "SI=F", "구리": "HG=F", "비트코인": "BTC-USD",
         "원/달러": "USDKRW=X"
     }
     
-    # 시간 설정 (KST 및 뉴욕 시간)
+    # 2. 시간 설정 (KST 및 뉴욕 시간)
     tz_kst = pytz.timezone('Asia/Seoul')
     tz_ny = pytz.timezone('America/New_York')
     
@@ -53,7 +53,13 @@ async def send_full_report():
     time_kst_str = now_kst.strftime("%Y-%m-%d %H:%M")
     time_ny_str = now_ny.strftime("%Y-%m-%d %H:%M")
     
+    # 3. 리포트 본문 구성 (시간 정보를 최상단으로 이동)
     full_report = f"📊 *[통합 경제 리포트]*\n\n"
+    
+    full_report += f"🕒 *[시간 정보]*\n"
+    full_report += f"🇰🇷 한국 시간: `{time_kst_str}`\n"
+    full_report += f"🇺🇸 뉴욕 시간: `{time_ny_str}`\n\n"
+    
     full_report += "📈 *[실시간 시장 지표]*\n"
     
     for name, ticker in symbols.items():
@@ -79,12 +85,7 @@ async def send_full_report():
         except:
             full_report += f"{name}: 업데이트 대기 중\n"
 
-    # --- 요청하신 시간 정보 추가 영역 ---
-    full_report += f"\n🕒 *[시간 정보]*\n"
-    full_report += f"🇰🇷 한국 시간: `{time_kst_str}`\n"
-    full_report += f"🇺🇸 뉴욕 시간: `{time_ny_str}`\n"
-    # ----------------------------------
-
+    # 4. 경제 일정 및 뉴스 추가
     full_report += "\n" + await get_economy_calendar()
     full_report += "\n📰 *[분야별 전문 뉴스 요약]*\n"
     keywords = ["나스닥 전망", "국제 금시세", "구리 가격", "비트코인 호재"]
@@ -93,6 +94,7 @@ async def send_full_report():
         if news_item:
             full_report += news_item + "\n\n"
 
+    # 5. 전송
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('CHAT_ID')
 
