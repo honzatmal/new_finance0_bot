@@ -1,11 +1,9 @@
-name: Daily Economy Report
+name: Scheduled Economy Report
 
 on:
   schedule:
-    - cron: '30 21 * * *' # KST 06:30 (미장 마감/아침 리포트)
-    - cron: '00 03 * * *' # KST 12:00 (오전 장 점검)
-    - cron: '00 07 * * *' # KST 16:00 (국내 마감/유럽 개장)
-    - cron: '00 12 * * *' # KST 21:00 (미장 개장 전 최종 점검)
+    - cron: '30 21 * * *' # KST 06:30 (지표 일정 중심)
+    - cron: '30 13 * * *' # KST 22:30 (실적 발표 중심)
   workflow_dispatch:
 
 jobs:
