@@ -7,21 +7,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 import pytz
 
-# --- 뉴스 및 일정 추출 함수 ---
-async def get_specific_news(keyword):
-    url = f"https://news.google.com/search?q={keyword}&hl=ko&gl=KR&ceid=KR%3Ako"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    try:
-        res = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        article = soup.select_one('article')
-        if article:
-            title = article.select_one('a.J77Cte').text
-            link = "https://news.google.com" + article.select_one('a')['href'][1:]
-            return f"• [{keyword}] {title}\n  └ {link}"
-    except: return None
-    return None
-
+# --- 정보 수집 함수 (뉴스/일정) ---
 async def get_economy_calendar(today_str):
     url = f"https://news.google.com/search?q={today_str}+주요+경제일정+발표&hl=ko&gl=KR&ceid=KR%3Ako"
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -47,14 +33,14 @@ async def get_earnings_report():
     except: pass
     return "💰 *[실적 알림]* 현재 주요 기업 실적 뉴스가 없습니다.\n"
 
-# --- 메인 리포트 생성 및 전송 함수 ---
+# --- 메인 리포트 생성 및 전송 ---
 async def send_report():
     tz_kst = pytz.timezone('Asia/Seoul')
     now_kst = datetime.now(tz_kst)
     hour = now_kst.hour
     today_str = now_kst.strftime("%m월 %d일")
 
-    # 모든 지표 카테고리 구성
+    # 지표 카테고리 구성 (요청하신 모든 항목 포함)
     market_data = {
         "📊 지수/환율": {
             "원/달러": "USDKRW=X", "국내선물": "KMK=F", "나스닥": "^IXIC", "S&P500": "^GSPC"
@@ -71,57 +57,49 @@ async def send_report():
         }
     }
     
-    report = f"🔔 *[{hour}시 정각 경제 리포트]*\n"
+    report = f"🔔 *[{hour}시 경제 리포트]*\n"
     report += f"🇰🇷 KST: `{now_kst.strftime('%H:%M')}` | 🇺🇸 NY: `{datetime.now(pytz.timezone('America/New_York')).strftime('%H:%M')}`\n\n"
     
     for category, symbols in market_data.items():
         report += f"*{category}*\n"
         for name, ticker in symbols.items():
             try:
+                # 데이터 유효성 확보 (5일치 조회 및 빈값 채우기)
                 data = yf.Ticker(ticker).history(period="5d")
                 data = data.ffill()
                 
                 if not data.empty and len(data) >= 2:
-                    close = data['Close'].iloc[-1]
-                    prev = data['Close'].iloc[-2]
-                    
-                    # 변동 포인트 계산
+                    close, prev = data['Close'].iloc[-1], data['Close'].iloc[-2]
                     diff = close - prev
-                    
-                    # 국채 금리 표시 보정 로직
-                    display_close = close
-                    display_diff = diff
-                    if ticker in ["^IRX", "^FVX", "^TNX", "^TYX"]:
-                        if close > 10:
-                            display_close = close / 10
-                            display_diff = diff / 10
-                    
                     pct = (diff / prev) * 100
+                    
+                    # 국채 금리 단위 보정 로직
+                    display_close, display_diff = close, diff
+                    if ticker in ["^IRX", "^FVX", "^TNX", "^TYX"] and close > 10:
+                        display_close, display_diff = close / 10, diff / 10
+                    
                     mark = "🔸" if diff > 0 else "🔹" if diff < 0 else "▫️"
                     sign = "+" if diff > 0 else ""
                     
-                    # 수치 표시 형식 결정
                     if "국채" in category:
-                        report += f"{name}: `{display_close:.2f}%` ({mark} {sign}{display_diff:+.2f}, {pct:+.2f}%)"
+                        report += f"{name}: `{display_close:.2f}%` ({mark} {sign}{display_diff:+.2f}, {pct:+.2f}%)\n"
                     else:
-                        report += f"{name}: `{close:,.2f}` ({mark} {sign}{diff:,.2f}, {pct:+.2f}%)"
-                    
-                    report += "\n"
+                        report += f"{name}: `{close:,.2f}` ({mark} {sign}{diff:,.2f}, {pct:+.2f}%)\n"
                 else:
                     report += f"{name}: 데이터 대기 중\n"
             except:
                 report += f"{name}: 조회 오류\n"
         report += "\n"
 
-    # 시간대별 맞춤 정보
+    # 시간대별 맞춤 정보 추가 (8시 지표, 22시 실적)
     if hour == 8:
         report += await get_economy_calendar(today_str) + "\n"
     elif hour == 22:
         report += await get_earnings_report() + "\n"
     
-    report += "🔗 [인베스팅 경제 캘린더 보기](https://kr.investing.com/economic-calendar/)"
+    report += "🔗 [인베스팅 경제 캘린더](https://kr.investing.com/economic-calendar/)"
 
-    # 전송
+    # 텔레그램 전송
     token = os.environ.get('TELEGRAM_TOKEN')
     chat_id = os.environ.get('CHAT_ID')
     if token and chat_id:
